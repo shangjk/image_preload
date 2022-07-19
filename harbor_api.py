@@ -157,8 +157,8 @@ class Cluster(object):
 
 class ElasticsearchClient(object):
 
-    def __init__(self, elasticsearch_hosts, elasticsearch_username="", elasticsearch_password=""):
-        self.index_name = "harbor_pushed_images"
+    def __init__(self, elasticsearch_index, elasticsearch_hosts, elasticsearch_username="", elasticsearch_password=""):
+        self.index_name = elasticsearch_index
         mapping = {
             "mappings": {
                 "properties": {
@@ -303,6 +303,8 @@ def get_cfg(cfg_file):
         return {"res": False, "msg": "{} section harbor_daemon option elasticsearch_hosts is None !".format(cfg_file)}
     elif not config.get("harbor_daemon", "crontab"):
         return {"res": False, "msg": "{} section harbor_daemon option crontab is None !".format(cfg_file)}
+    elif not config.get("harbor_daemon", "elasticsearch_index"):
+        return {"res": False, "msg": "{} section harbor_daemon option elasticsearch_index is None !".format(cfg_file)}
     else:
         return {"res": True, "msg": config}
 
@@ -381,6 +383,7 @@ def main():
         docker_daemon_label = configs.get("harbor_daemon", "docker_daemon_label")
         thread_pools = configs.get("harbor_daemon", "thread_pools")
         action_timeout = configs.get("harbor_daemon", "action_timeout")
+        elasticsearch_index = configs.get("harbor_daemon", "elasticsearch_index")
         elasticsearch_hosts = configs.get("harbor_daemon", "elasticsearch_hosts")
         elasticsearch_username = configs.get("harbor_daemon", "elasticsearch_username")
         elasticsearch_password = str(base64.b64decode(configs.get("harbor_daemon", "elasticsearch_password")), encoding='utf-8')
@@ -393,7 +396,7 @@ def main():
     hab = Harbor(url=harbor_addr, username=harbor_username, password=harbor_password,
                  project=harbor_projects, version=harbor_api_version)
     # 初始化一个elasticsearch类,并判断索引是否存在
-    es_client = ElasticsearchClient(elasticsearch_hosts=elasticsearch_hosts,
+    es_client = ElasticsearchClient(elasticsearch_index=elasticsearch_index, elasticsearch_hosts=elasticsearch_hosts,
                                     elasticsearch_username=elasticsearch_username,
                                     elasticsearch_password=elasticsearch_password)
     # 初始化Cluster类
