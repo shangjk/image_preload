@@ -75,13 +75,14 @@ class Cluster(object):
             if res_deploys.status_code == 200:
                 try:
                     images_subset = res_deploys.json()['items']
-                    for i in images_subset:
-                        if "initContainers" in i['spec']["template"]["spec"].keys():
-                            for x in i['spec']["template"]["spec"]["initContainers"]:
-                                images_pool.append(x["image"])
-                        for y in i['spec']["template"]["spec"]["containers"]:
-                            images_pool.append(y["image"])
-                    logger.debug("Target images pools : %s" % images_pool)
+                    if len(images_subset) > 0:
+                        for i in images_subset:
+                            if "initContainers" in i['spec']["template"]["spec"].keys():
+                                for x in i['spec']["template"]["spec"]["initContainers"]:
+                                    images_pool.append(x["image"])
+                            for y in i['spec']["template"]["spec"]["containers"]:
+                                images_pool.append(y["image"])
+                        logger.debug("Target images pools : %s" % images_pool)
                 except KeyError as e:
                     logger.error(e)
                     return False, e
@@ -109,13 +110,14 @@ class Cluster(object):
             if res_ds.status_code == 200:
                 try:
                     images_subset = res_ds.json()['items']
-                    for i in images_subset:
-                        if "initContainers" in i['spec']["template"]["spec"].keys():
-                            for x in i['spec']["template"]["spec"]["initContainers"]:
-                                ds_images_pool.append(x["image"])
-                        for y in i['spec']["template"]["spec"]["containers"]:
-                            ds_images_pool.append(y["image"])
-                    logger.debug("Target images pools : %s" % ds_images_pool)
+                    if len(images_subset) > 0:
+                        for i in images_subset:
+                            if "initContainers" in i['spec']["template"]["spec"].keys():
+                                for x in i['spec']["template"]["spec"]["initContainers"]:
+                                    ds_images_pool.append(x["image"])
+                            for y in i['spec']["template"]["spec"]["containers"]:
+                                ds_images_pool.append(y["image"])
+                        logger.debug("Target images pools : %s" % ds_images_pool)
                 except KeyError as e:
                     logger.error(e)
                     return False, e
@@ -138,13 +140,14 @@ class Cluster(object):
             if res_sts.status_code == 200:
                 try:
                     images_subset = res_sts.json()['items']
-                    for i in images_subset:
-                        if "initContainers" in i['spec']["template"]["spec"].keys():
-                            for x in i['spec']["template"]["spec"]["initContainers"]:
-                                sts_images_pool.append(x["image"])
-                        for y in i['spec']["template"]["spec"]["containers"]:
-                            sts_images_pool.append(y["image"])
-                    logger.debug("Target images pools : %s" % sts_images_pool)
+                    if len(images_subset) > 0:
+                        for i in images_subset:
+                            if "initContainers" in i['spec']["template"]["spec"].keys():
+                                for x in i['spec']["template"]["spec"]["initContainers"]:
+                                    sts_images_pool.append(x["image"])
+                            for y in i['spec']["template"]["spec"]["containers"]:
+                                sts_images_pool.append(y["image"])
+                        logger.debug("Target images pools : %s" % sts_images_pool)
                 except KeyError as e:
                     logger.error(e)
                     return False, e
@@ -154,6 +157,68 @@ class Cluster(object):
             else:
                 logger.error(res_sts.text)
                 return False, "status_code: {}  messages: {}".format(res_sts.status_code, res_sts.text)
+
+    def get_jobs_images(self):
+        jobs_url = "{}/apis/batch/v1/jobs".format(self.api_host)
+        jobs_images_pool = []
+        try:
+            res_jobs = requests.get(url=jobs_url, headers=self.headers, verify=False, timeout=20)
+        except Exception as e:
+            logger.error(e)
+            return False, e
+        else:
+            if res_jobs.status_code == 200:
+                try:
+                    images_subset = res_jobs.json()['items']
+                    if len(images_subset) > 0:
+                        for i in images_subset:
+                            if "initContainers" in i['spec']["template"]["spec"].keys():
+                                for x in i['spec']["template"]["spec"]["initContainers"]:
+                                    jobs_images_pool.append(x["image"])
+                            for y in i['spec']["template"]["spec"]["containers"]:
+                                jobs_images_pool.append(y["image"])
+                        logger.debug("Target images pools : %s" % jobs_images_pool)
+                except KeyError as e:
+                    logger.error(e)
+                    return False, e
+                else:
+                    logger.info(jobs_images_pool)
+                    return True, jobs_images_pool
+            else:
+                logger.error(res_jobs.text)
+                return False, "status_code: {}  messages: {}".format(res_jobs.status_code, res_jobs.text)
+
+    def get_cronjobs_images(self):
+        cronjobs_url = "{}/apis/batch/v1beta1/cronjobs".format(self.api_host)
+        cronjobs_images_pool = []
+        try:
+            res_cronjobs = requests.get(url=cronjobs_url, headers=self.headers, verify=False, timeout=20)
+        except Exception as e:
+            logger.error(e)
+            return False, e
+        else:
+            if res_cronjobs.status_code == 200:
+                try:
+                    images_subset = res_cronjobs.json()['items']
+                    if len(images_subset) > 0:
+                        for i in images_subset:
+                            if "initContainers" in i['spec']["template"]["spec"].keys():
+                                for x in i['spec']["template"]["spec"]["initContainers"]:
+                                    cronjobs_images_pool.append(x["image"])
+                            for y in i['spec']["template"]["spec"]["containers"]:
+                                cronjobs_images_pool.append(y["image"])
+                        logger.debug("Target images pools : %s" % cronjobs_images_pool)
+                except KeyError as e:
+                    logger.error(e)
+                    return False, e
+                else:
+                    logger.info(cronjobs_images_pool)
+                    return True, cronjobs_images_pool
+            else:
+                logger.error(res_cronjobs.text)
+                return False, "status_code: {}  messages: {}".format(res_cronjobs.status_code, res_cronjobs.text)
+
+
 
 def return_method_error():
     return "Request method is error! ", 405
@@ -235,6 +300,16 @@ def clean_useless_images():
     else:
         logger.error(sts_images)
     logger.info("Use images online: %s" % using_images_all)
+    jobs_status, jobs_images = k8s.get_jobs_images()
+    if jobs_status:
+        using_images_all = using_images_all + jobs_images
+    else:
+        logger.error(jobs_images)
+    cronjobs_status, cronjobs_images = k8s.get_cronjobs_images()
+    if cronjobs_status:
+        using_images_all = using_images_all + cronjobs_images
+    else:
+        logger.error(cronjobs_images)
 
     try:
         untag_images_client = session.post('http+unix://%2Fvar%2Frun%2Fdocker.sock/images/prune?dangling=true')
