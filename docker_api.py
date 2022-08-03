@@ -26,7 +26,7 @@ app = Flask(__name__)
 images_count_sum = Gauge("images_count_sum", "Number of node images")
 if os.path.exists('/var/run/docker.sock'):
     session = Session()
-    client = docker.DockerClient(base_url='unix://var/run/docker.sock', max_pool_size=10, timeout=60)
+    client = docker.DockerClient(base_url='unix://var/run/docker.sock', max_pool_size=15, timeout=60)
 else:
     logging.error("Sock file /var/run/docker.sock is not exists !")
     sys.exit(2)
@@ -320,10 +320,11 @@ def clean_useless_images():
         if untag_images_client.status_code != 200:
             logger.error("Clean Untagged images failed, status code: {}, failed mesg: {}".format(untag_images_client.status_code, untag_images_client.text))
         if node_images.status_code == 200:
-            for img in node_images.json():
-                for y in img['RepoTags']:
-                    if y is not None and y not in using_images_all and img['Created'] < int(time.time() - 604800):
-                        remove_images.append(y)
+            for img in node_images.json() and len(node_images.json()) > 0:
+                if img['RepoTags'] is not None:
+                    for y in img['RepoTags']:
+                        if y is not None and y not in using_images_all and img['Created'] < int(time.time() - 604800):
+                            remove_images.append(y)
             logger.info("Remove images list: %s" % remove_images)
         else:
             logger.error("Status code: {}, messages: {}".format(node_images.status_code, node_images.text))
